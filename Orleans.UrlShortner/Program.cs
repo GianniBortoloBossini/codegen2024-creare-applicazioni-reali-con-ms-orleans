@@ -12,6 +12,13 @@ builder.Host.UseOrleans(siloBuilder =>
     {
         siloBuilder.UseLocalhostClustering();
     }
+
+    siloBuilder.UseDashboard(dashboardConfig =>
+    {
+        dashboardConfig.Port = 7070;
+        dashboardConfig.Username = "admin";
+        dashboardConfig.Password = "admin";
+    });
 });
 
 // Registrazione dei servizi del supporto Swagger
