@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Orleans.UrlShortner.Grains;
+using Orleans.UrlShortner.Grains.Stateless;
 using Orleans.UrlShortner.Infrastructure.Exceptions;
 using Orleans.UrlShortner.Models;
 using Serilog;
@@ -25,6 +26,9 @@ builder.Host.UseOrleans(siloBuilder =>
             loggingConfig.AddConsole().AddSerilog(Log.Logger);
         });
         siloBuilder.AddActivityPropagation();
+
+        // REGISTRAZIONE REMINDERS
+        siloBuilder.UseInMemoryReminderService();
     }
 
     siloBuilder.UseDashboard(dashboardConfig =>
@@ -75,7 +79,8 @@ app.MapPost("/shorten",
             return Results.BadRequest($"Valore del campo URL non valido.");
 
         // Creazione di un ID univoco
-        var shortenedRouteSegment = Guid.NewGuid().GetHashCode().ToString("X");
+        var shortenerRouteSegmentWorker =  grains.GetGrain<IShortenedRouteSegmentStatelessWorker>(0);
+        var shortenedRouteSegment = await shortenerRouteSegmentWorker.Create();
 
         // Creazione del grano 
         var shortenerGrain = client.GetGrain<IUrlShortenerGrain>(shortenedRouteSegment);
@@ -122,9 +127,13 @@ app.MapGet("/statistics",
         var shortenedGrain = client.GetGrain<IUrlShortnerStatisticsGrain>("url_shortner_statistics");
 
         // Recupero della statistiche tramite metodo GetTotal del grano
-        var total = await shortenedGrain.GetTotal();
+        var totalActivations = await shortenedGrain.GetTotal();
+        var totalActiveShortenedRouteSegment = await shortenedGrain.GetNumberOfActiveShortenedRouteSegment();
 
-        return Results.Ok(new GetStatisticsModel.Response { TotalActivations = total });
+        return Results.Ok(new GetStatisticsModel.Response { 
+            TotalActivations = totalActivations,
+            TotalActiveShortenedRouteSegment = totalActiveShortenedRouteSegment
+        });
     })
     .WithName("Statistics")
     .WithDescription("Endpoint per il recupero delle statistiche")

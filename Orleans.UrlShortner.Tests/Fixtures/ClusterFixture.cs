@@ -21,6 +21,6 @@ public class TestSiloConfigurations : ISiloConfigurator
 {
     public void Configure(ISiloBuilder siloBuilder)
     {
-        
+        siloBuilder.UseInMemoryReminderService();
     }
 }
