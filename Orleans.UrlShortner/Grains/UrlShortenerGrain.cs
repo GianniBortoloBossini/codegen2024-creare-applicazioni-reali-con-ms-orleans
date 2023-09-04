@@ -24,9 +24,7 @@ public class UrlShortenerGrain : Grain, IUrlShortenerGrain
         this.Expiration = DateTime.UtcNow.AddSeconds(ValidFor);
 
         var statsGrain = GrainFactory.GetGrain<IUrlShortnerStatisticsGrain>("url_shortner_statistics");
-        statsGrain.RegisterNew();
-
-        return Task.CompletedTask;
+        return statsGrain.RegisterNew();
     }
 
     public Task<string> GetUrl()
