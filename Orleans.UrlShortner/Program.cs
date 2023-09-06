@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using Orleans.UrlShortner.Filters;
 using Orleans.UrlShortner.Grains;
 using Orleans.UrlShortner.Infrastructure.Exceptions;
 using Orleans.UrlShortner.Models;
@@ -26,6 +27,9 @@ builder.Host.UseOrleans(siloBuilder =>
             loggingConfig.AddConsole().AddSerilog(Log.Logger);
         });
         siloBuilder.AddActivityPropagation();
+
+        // ADD SILO-WIDE GRAIN CALL FILTERS
+        siloBuilder.AddIncomingGrainCallFilter<LoggingCallFilter>();
 
         // REGISTRAZIONE REMINDERS
         siloBuilder.UseInMemoryReminderService();
