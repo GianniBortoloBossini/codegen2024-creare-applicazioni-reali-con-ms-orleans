@@ -30,8 +30,7 @@ builder.Host.UseOrleans(siloBuilder =>
         siloBuilder.AddActivityPropagation();
 
         // ADD SILO-WIDE GRAIN CALL FILTERS
-        siloBuilder.AddIncomingGrainCallFilter<IncomingLoggingCallFilter>();
-        siloBuilder.AddOutgoingGrainCallFilter<OutgoingLoggingCallFilter>();
+        siloBuilder.AddIncomingGrainCallFilter<LoggingCallFilter>();
 
         // REGISTRAZIONE REMINDERS
         siloBuilder.UseInMemoryReminderService();
