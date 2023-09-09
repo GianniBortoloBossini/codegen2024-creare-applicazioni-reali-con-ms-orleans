@@ -5,8 +5,11 @@ namespace Orleans.UrlShortner.Grains;
 
 public interface IDomainGrain : IGrainWithStringKey, IGrainObserver
 {
+    [OneWay]
     Task Initialize();
+    [OneWay]
     Task RegisterNew();
+    [OneWay]
     Task RegisterExpiration();
     [ReadOnly]
     Task<int> GetTotal();
