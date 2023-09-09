@@ -1,6 +1,6 @@
 ﻿using Orleans.Concurrency;
 
-namespace Orleans.UrlShortner.Grains.Stateless;
+namespace Orleans.UrlShortner.StatelessWorkers;
 
 public interface IShortenedRouteSegmentStatelessWorker : IGrainWithIntegerKey
 {

@@ -1,5 +1,5 @@
 ﻿using Orleans.UrlShortner.Grains;
-using Orleans.UrlShortner.Grains.Stateless;
+using Orleans.UrlShortner.StatelessWorkers;
 using Orleans.UrlShortner.Tests.Fixtures;
 
 namespace Orleans.UrlShortner.Tests.Grains;

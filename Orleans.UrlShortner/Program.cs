@@ -2,9 +2,9 @@ using Microsoft.AspNetCore.Mvc;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Orleans.UrlShortner.Grains;
-using Orleans.UrlShortner.Grains.Stateless;
 using Orleans.UrlShortner.Infrastructure.Exceptions;
 using Orleans.UrlShortner.Models;
+using Orleans.UrlShortner.StatelessWorkers;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
