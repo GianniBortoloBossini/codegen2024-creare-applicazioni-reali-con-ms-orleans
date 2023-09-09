@@ -15,10 +15,14 @@ public class ShortenedRouteSegmentStatelessWorker : Grain, IShortenedRouteSegmen
 
     public async Task Invoke(IIncomingGrainCallContext context)
     {
+        if (context.InterfaceMethod.Name == "Create" && context.Request.GetArgument(0) is not null)
+            context.Request.SetArgument(0, context.Request.GetArgument(0).ToString().ToLower());
+
         await context.Invoke();
 
         if (context.InterfaceMethod.Name == "Create" &&
-           context.Request.GetArgument(0).ToString().ToLower().StartsWith("http://"))
+            context.Request.GetArgument(0) is not null &&
+            context.Request.GetArgument(0).ToString().ToLower().StartsWith("http://"))
             context.Result = $"UNSAFE_{context.Result}";
     }
 }
