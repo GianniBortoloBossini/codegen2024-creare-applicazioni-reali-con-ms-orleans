@@ -48,11 +48,12 @@ internal class UrlShortnerStatisticsGrainTests
     [TestCase(60, 61000)]
     public async Task GetNumberOfActiveShortenedRouteSegment_Should_Count_Active_Shortened_Route_Segment(int validFor, int checkAfter)
     {
+        var url = "https://capitalecultura2023.it/";
         var shortenerRouteSegmentWorker = fixture.Cluster.GrainFactory.GetGrain<IShortenedRouteSegmentStatelessWorker>(0);
-        var shortenerRouteSegment = await shortenerRouteSegmentWorker.Create("http://www.codiceplastico.com");
+        var shortenerRouteSegment = await shortenerRouteSegmentWorker.Create(url);
 
         var urlshortenerGrain = fixture.Cluster.GrainFactory.GetGrain<IUrlShortenerGrain>(shortenerRouteSegment);
-        await urlshortenerGrain.CreateShortUrl("https://capitalecultura2023.it/", false, 3);
+        await urlshortenerGrain.CreateShortUrl(url, false, 3);
 
         var statisticsGrain = fixture.Cluster.GrainFactory.GetGrain<IUrlShortnerStatisticsGrain>("url_shortner_statistics");
 
