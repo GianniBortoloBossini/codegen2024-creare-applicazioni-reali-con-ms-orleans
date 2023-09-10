@@ -5,7 +5,6 @@ namespace Orleans.UrlShortner.Grains;
 
 public interface IUrlShortnerStatisticsGrain : IGrainWithStringKey, IGrainObserver
 {
-    [OneWay]
     Task Initialize();
     [OneWay]
     Task RegisterNew();
