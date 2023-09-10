@@ -34,6 +34,11 @@ builder.Host.UseOrleans(siloBuilder =>
 
         // REGISTRAZIONE REMINDERS
         siloBuilder.UseInMemoryReminderService();
+
+        // REGISTRAZIONE STORAGE IN MEMORIA
+        siloBuilder.AddMemoryGrainStorage("domainstatisticsstorage");
+        siloBuilder.AddMemoryGrainStorage("applicationstatisticsstorage");
+        siloBuilder.AddMemoryGrainStorage("urlshortnerstorage");
     }
 
     // Attivo il grano delle statistiche alla partenza dell'applicazione

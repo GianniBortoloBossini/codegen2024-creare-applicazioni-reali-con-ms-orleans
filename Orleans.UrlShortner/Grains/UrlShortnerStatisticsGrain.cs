@@ -1,4 +1,5 @@
 ﻿using Orleans.Concurrency;
+using Orleans.Runtime;
 using Orleans.UrlShortner.Observers;
 
 namespace Orleans.UrlShortner.Grains;
@@ -6,9 +7,7 @@ namespace Orleans.UrlShortner.Grains;
 public interface IUrlShortnerStatisticsGrain : IGrainWithStringKey, IGrainObserver
 {
     Task Initialize();
-    [OneWay]
     Task RegisterNew();
-    [OneWay]
     Task RegisterExpiration();
     [ReadOnly]
     Task<int> GetTotal();
@@ -16,12 +15,25 @@ public interface IUrlShortnerStatisticsGrain : IGrainWithStringKey, IGrainObserv
     Task<int> GetNumberOfActiveShortenedRouteSegment();
 }
 
+[GenerateSerializer]
+public class ApplicationStatisticsState
+{
+    [Id(0)]
+    public int TotalActivations { get; set; }
+    [Id(1)]
+    public int NumberOfActiveShortenedRouteSegment { get; set; }
+}
+
 public class UrlShortnerStatisticsGrain : Grain, IUrlShortnerStatisticsGrain
 {
+    private readonly IPersistentState<ApplicationStatisticsState> state;
     private readonly ILogger<UrlShortnerStatisticsGrain> logger;
 
-    public UrlShortnerStatisticsGrain(ILogger<UrlShortnerStatisticsGrain> logger)
+    public UrlShortnerStatisticsGrain(
+        [PersistentState(stateName: "application-statistics", storageName: "applicationstatisticsstorage")] IPersistentState<ApplicationStatisticsState> state,
+        ILogger<UrlShortnerStatisticsGrain> logger)
     {
+        this.state = state;
         this.logger = logger;
     }
 
@@ -34,9 +46,6 @@ public class UrlShortnerStatisticsGrain : Grain, IUrlShortnerStatisticsGrain
         await friend.Unsubscribe(obj);
     }
 
-    public int TotalActivations { get; set; }
-    public int NumberOfActiveShortenedRouteSegment { get; set; }
-
     public Task Initialize()
     {
         var friend = GrainFactory.GetGrain<IRegistrationObserversManager>(0);
@@ -46,34 +55,34 @@ public class UrlShortnerStatisticsGrain : Grain, IUrlShortnerStatisticsGrain
 
     public Task<int> GetTotal()
     {
-        logger.LogInformation("Total activations: {TotalActivations}.", TotalActivations);
+        logger.LogInformation("Total activations: {TotalActivations}.", this.state.State.TotalActivations);
 
-        return Task.FromResult(TotalActivations);
+        return Task.FromResult(this.state.State.TotalActivations);
     }
 
     public Task<int> GetNumberOfActiveShortenedRouteSegment()
     {
-        logger.LogInformation("Total number of active shortened route segment: {NumberOfActiveShortenedRouteSegment}.", NumberOfActiveShortenedRouteSegment);
+        logger.LogInformation("Total number of active shortened route segment: {NumberOfActiveShortenedRouteSegment}.", this.state.State.NumberOfActiveShortenedRouteSegment);
 
-        return Task.FromResult(NumberOfActiveShortenedRouteSegment);
+        return Task.FromResult(this.state.State.NumberOfActiveShortenedRouteSegment);
     }
 
     public Task RegisterNew()
     {
         logger.LogInformation($"New activation registered!");
 
-        this.TotalActivations++;
-        this.NumberOfActiveShortenedRouteSegment++;
+        this.state.State.TotalActivations++;
+        this.state.State.NumberOfActiveShortenedRouteSegment++;
 
-        return Task.CompletedTask;
+        return state.WriteStateAsync();
     }
 
     public Task RegisterExpiration()
     {
         logger.LogInformation($"Activation expired!");
 
-        this.NumberOfActiveShortenedRouteSegment--;
+        this.state.State.NumberOfActiveShortenedRouteSegment--;
 
-        return Task.CompletedTask;
+        return state.WriteStateAsync();
     }
 }
