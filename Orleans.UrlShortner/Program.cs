@@ -3,7 +3,6 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Orleans.UrlShortner.Filters;
 using Orleans.UrlShortner.Grains;
-using Orleans.UrlShortner.Grains.Stateless;
 using Orleans.UrlShortner.Infrastructure.Exceptions;
 using Orleans.UrlShortner.Models;
 using Orleans.UrlShortner.StatelessWorkers;
@@ -94,7 +93,7 @@ app.MapPost("/shorten",
 
         // Attivazione di un grain legato all'host
         var uri = new Uri(data.Url);
-        var domainGrain = grains.GetGrain<IDomainGrain>(uri.Host);
+        var domainGrain = client.GetGrain<IDomainGrain>(uri.Host);
         await domainGrain.Initialize();
 
         // Creazione di un ID univoco
