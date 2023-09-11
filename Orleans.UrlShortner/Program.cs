@@ -28,7 +28,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapPost("/shorten",
-    async ([FromBody] PostCreateUrlShortnerModel.Request data, IGrainFactory grains, HttpRequest request) =>
+    async ([FromBody] PostCreateUrlShortnerModel.Request data, IClusterClient client, HttpRequest request) =>
     {
         var host = $"{request.Scheme}://{request.Host.Value}";
 
@@ -40,7 +40,7 @@ app.MapPost("/shorten",
         var shortenedRouteSegment = Guid.NewGuid().GetHashCode().ToString("X");
 
         // Creazione del grano 
-        var shortenerGrain = grains.GetGrain<IUrlShortenerGrain>(shortenedRouteSegment);
+        var shortenerGrain = client.GetGrain<IUrlShortenerGrain>(shortenedRouteSegment);
         await shortenerGrain.CreateShortUrl(data.Url, data.IsOneShoot, data.DurationInSeconds);
 
         // Creazione della risposta
@@ -58,10 +58,10 @@ app.MapPost("/shorten",
 
 
 app.MapGet("/go/{shortenedRouteSegment:required}",
-    async (IGrainFactory grains, string shortenedRouteSegment) =>
+    async (IClusterClient client, string shortenedRouteSegment) =>
     {
         // Recupero della reference al grano identificato dall'ID univoco
-        var shortenedGrain = grains.GetGrain<IUrlShortenerGrain>(shortenedRouteSegment);
+        var shortenedGrain = client.GetGrain<IUrlShortenerGrain>(shortenedRouteSegment);
         
         try
         {
@@ -77,10 +77,10 @@ app.MapGet("/go/{shortenedRouteSegment:required}",
     .WithOpenApi();
 
 app.MapGet("/statistics",
-    async (IGrainFactory grains) =>
+    async (IClusterClient client) =>
     {
         // Recupero della reference al grano identificato dall'ID univoco
-        var shortenedGrain = grains.GetGrain<IUrlShortnerStatisticsGrain>("url_shortner_statistics");
+        var shortenedGrain = client.GetGrain<IUrlShortnerStatisticsGrain>("url_shortner_statistics");
 
         // Recupero della statistiche tramite metodo GetTotal del grano
         var total = await shortenedGrain.GetTotal();
