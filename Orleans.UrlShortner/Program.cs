@@ -39,8 +39,8 @@ builder.Host.UseOrleans(siloBuilder =>
     siloBuilder.AddStartupTask(
           (IServiceProvider services, CancellationToken cancellation) =>
           {
-              var grainFactory = services.GetRequiredService<IGrainFactory>();
-              var grain = grainFactory.GetGrain<IUrlShortnerStatisticsGrain>("url_shortner_statistics");
+              var clusterClient = services.GetRequiredService<IClusterClient>();
+              var grain = clusterClient.GetGrain<IUrlShortnerStatisticsGrain>("url_shortner_statistics");
               return grain.Initialize();
           });
 
