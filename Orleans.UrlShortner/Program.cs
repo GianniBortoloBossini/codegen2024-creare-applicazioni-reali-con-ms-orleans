@@ -85,7 +85,7 @@ app.MapPost("/shorten",
 
         // Creazione di un ID univoco
         var shortenerRouteSegmentWorker = client.GetGrain<IShortenedRouteSegmentStatelessWorker>(0);
-        var shortenedRouteSegment = await shortenerRouteSegmentWorker.Create();
+        var shortenedRouteSegment = await shortenerRouteSegmentWorker.Create(data.Url);
 
         // Creazione del grano 
         var shortenerGrain = client.GetGrain<IUrlShortenerGrain>(shortenedRouteSegment);
