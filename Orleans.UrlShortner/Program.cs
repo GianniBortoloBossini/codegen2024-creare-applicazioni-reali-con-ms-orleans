@@ -79,7 +79,7 @@ app.MapPost("/shorten",
             return Results.BadRequest($"Valore del campo URL non valido.");
 
         // Creazione di un ID univoco
-        var shortenerRouteSegmentWorker =  grains.GetGrain<IShortenedRouteSegmentStatelessWorker>(0);
+        var shortenerRouteSegmentWorker = client.GetGrain<IShortenedRouteSegmentStatelessWorker>(0);
         var shortenedRouteSegment = await shortenerRouteSegmentWorker.Create();
 
         // Creazione del grano 
