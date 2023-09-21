@@ -44,8 +44,9 @@ internal class UrlShortnerStatisticsGrainTests
         Assert.That(result, Is.EqualTo(registrationTimes));
     }
 
-    [Test]
-    public async Task GetNumberOfActiveShortenedRouteSegment_Should_Count_Active_Shortened_Route_Segment_With_Timer()
+    [TestCase(3, 3100)]
+    [TestCase(60, 61000)]
+    public async Task GetNumberOfActiveShortenedRouteSegment_Should_Count_Active_Shortened_Route_Segment(int validFor, int checkAfter)
     {
         var shortenerRouteSegmentWorker = fixture.Cluster.GrainFactory.GetGrain<IShortenedRouteSegmentStatelessWorker>(0);
         var shortenerRouteSegment = await shortenerRouteSegmentWorker.Create();
@@ -55,7 +56,7 @@ internal class UrlShortnerStatisticsGrainTests
 
         var statisticsGrain = fixture.Cluster.GrainFactory.GetGrain<IUrlShortnerStatisticsGrain>("url_shortner_statistics");
 
-        await Task.Delay(100);
+        await Task.Delay(validFor);
 
         var totalActivation = await statisticsGrain.GetTotal();
         var numberOfActiveShortenerRouteSegment = await statisticsGrain.GetNumberOfActiveShortenedRouteSegment();
@@ -63,35 +64,7 @@ internal class UrlShortnerStatisticsGrainTests
         Assert.That(totalActivation, Is.EqualTo(1));
         Assert.That(numberOfActiveShortenerRouteSegment, Is.EqualTo(1));
 
-        await Task.Delay(3100);
-
-        totalActivation = await statisticsGrain.GetTotal();
-        numberOfActiveShortenerRouteSegment = await statisticsGrain.GetNumberOfActiveShortenedRouteSegment();
-
-        Assert.That(totalActivation, Is.EqualTo(1));
-        Assert.That(numberOfActiveShortenerRouteSegment, Is.EqualTo(0));
-    }
-
-    [Test]
-    public async Task GetNumberOfActiveShortenedRouteSegment_Should_Count_Active_Shortened_Route_Segment_With_Reminder()
-    {
-        var shortenerRouteSegmentWorker = fixture.Cluster.GrainFactory.GetGrain<IShortenedRouteSegmentStatelessWorker>(0);
-        var shortenerRouteSegment = await shortenerRouteSegmentWorker.Create();
-
-        var urlshortenerGrain = fixture.Cluster.GrainFactory.GetGrain<IUrlShortenerGrain>(shortenerRouteSegment);
-        await urlshortenerGrain.CreateShortUrl("https://capitalecultura2023.it/", false, 60);
-
-        var statisticsGrain = fixture.Cluster.GrainFactory.GetGrain<IUrlShortnerStatisticsGrain>("url_shortner_statistics");
-
-        await Task.Delay(100);
-
-        var totalActivation = await statisticsGrain.GetTotal();
-        var numberOfActiveShortenerRouteSegment = await statisticsGrain.GetNumberOfActiveShortenedRouteSegment();
-
-        Assert.That(totalActivation, Is.EqualTo(1));
-        Assert.That(numberOfActiveShortenerRouteSegment, Is.EqualTo(1));
-
-        await Task.Delay(61000);
+        await Task.Delay(checkAfter);
 
         totalActivation = await statisticsGrain.GetTotal();
         numberOfActiveShortenerRouteSegment = await statisticsGrain.GetNumberOfActiveShortenedRouteSegment();
