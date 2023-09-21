@@ -69,8 +69,9 @@ app.MapGet("/go/{shortenedRouteSegment:required}",
             var url = await shortenedGrain.GetUrl();
             return Results.Redirect(url);
         }
-        catch (ExpiredShortenedRouteSegmentException) { return Results.NotFound(); }
-        catch (InvocationExcedeedException) { return Results.NotFound(); }
+        catch (ExpiredShortenedRouteSegmentException) { return Results.BadRequest(); }
+        catch (InvocationExcedeedException) { return Results.StatusCode(429); }
+        catch (ShortenedRouteSegmentNotFound) { return Results.NotFound(); }
     })
     .WithName("Go")
     .WithDescription("Endpoint per il recupero dell'url abbreviato")

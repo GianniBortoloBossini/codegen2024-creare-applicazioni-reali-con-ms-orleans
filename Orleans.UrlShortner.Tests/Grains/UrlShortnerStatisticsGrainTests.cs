@@ -18,12 +18,16 @@ internal class UrlShortnerStatisticsGrainTests
     [TestCase(100)]
     public async Task GetTotal_Should_Count_New_Registrations(int registrationTimes)
     {
+        // ARRANGE
         var statisticsGrain = fixture.Cluster.GrainFactory.GetGrain<IUrlShortnerStatisticsGrain>("url_shortner_statistics");
+        
         List<Task> tasks = new();
         for (int i = 0; i < registrationTimes; i++)
             tasks.Add(statisticsGrain.RegisterNew());
 
         await Task.WhenAll(tasks);
+
+        // ACT
 
         /* PERCHE' QUESTO DELAY? 
          * Provare a decommentare gli attributi OneWay e ReadOnly sull'interfaccia del grano e scoprirai che i test falliscono.
@@ -35,6 +39,7 @@ internal class UrlShortnerStatisticsGrainTests
 
         var result = await statisticsGrain.GetTotal();
 
+        // ASSERT
         Assert.That(result, Is.EqualTo(registrationTimes));
     }
 }

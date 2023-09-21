@@ -31,7 +31,7 @@ public class UrlShortenerGrain : Grain, IUrlShortenerGrain
     {
         this.Invocations += 1;
 
-        if (string.IsNullOrWhiteSpace(this.FullUrl)) { throw new InvocationExcedeedException(); }
+        if (string.IsNullOrWhiteSpace(this.FullUrl)) { throw new ShortenedRouteSegmentNotFound(); }
         if (IsOneShoot && this.Invocations > 1) { throw new InvocationExcedeedException(); }
         if (DateTime.UtcNow > this.Expiration) { throw new ExpiredShortenedRouteSegmentException(); }
 
