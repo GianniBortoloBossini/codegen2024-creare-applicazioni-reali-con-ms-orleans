@@ -17,7 +17,7 @@ builder.Host.UseOrleans(siloBuilder =>
         siloBuilder.ConfigureLogging(loggingConfig =>
         {
             Log.Logger = new LoggerConfiguration()
-                        .WriteTo.File("log-.txt", 
+                        .WriteTo.File("logs/log-.txt", 
                                       outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}", 
                                       rollingInterval: RollingInterval.Day)
                         .CreateLogger();
