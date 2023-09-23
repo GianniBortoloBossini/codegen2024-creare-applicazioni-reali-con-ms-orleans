@@ -54,12 +54,12 @@ internal class UrlShortnerStatisticsGrainTests
 
         var domainWithoutStatistics = (new Uri("https://www.codiceplastico.com/")).Host;
         var domainWithoutStatisticsGrain = fixture.Cluster.GrainFactory.GetGrain<IDomainStatisticsGrain>(domainWithoutStatistics);
-        await domainWithoutStatisticsGrain.Initialize();
+        await domainWithoutStatisticsGrain.Activate();
 
         var url = "https://capitalecultura2023.it/";
         var domain = (new Uri(url)).Host;
         var domainStatisticsGrain = fixture.Cluster.GrainFactory.GetGrain<IDomainStatisticsGrain>(domain);
-        await domainStatisticsGrain.Initialize();
+        await domainStatisticsGrain.Activate();
 
         var shortenerRouteSegmentWorker = fixture.Cluster.GrainFactory.GetGrain<IShortenedRouteSegmentStatelessWorker>(0);
         var shortenerRouteSegment1 = await shortenerRouteSegmentWorker.Create(url);

@@ -142,7 +142,7 @@ app.MapPost("/shorten",
         // Attivazione di un grain legato all'host
         var uri = new Uri(data.Url);
         var domainGrain = client.GetGrain<IDomainStatisticsGrain>(uri.Host);
-        await domainGrain.Initialize();
+        await domainGrain.Activate();
 
         // Creazione di un ID univoco
         var shortenerRouteSegmentWorker = client.GetGrain<IShortenedRouteSegmentStatelessWorker>(0);
