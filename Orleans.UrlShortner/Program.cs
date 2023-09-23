@@ -6,6 +6,7 @@ using Orleans.UrlShortner.Filters;
 using Orleans.UrlShortner.Grains;
 using Orleans.UrlShortner.Infrastructure.Exceptions;
 using Orleans.UrlShortner.Models;
+using Orleans.UrlShortner.Observers;
 using Orleans.UrlShortner.StatelessWorkers;
 using Serilog;
 
@@ -79,12 +80,17 @@ builder.Host.UseOrleans(siloBuilder =>
 
     // Attivo il grano delle statistiche alla partenza dell'applicazione
     siloBuilder.AddStartupTask(
-          (IServiceProvider services, CancellationToken cancellation) =>
+          async (IServiceProvider services, CancellationToken cancellation) =>
           {
-              var clusterClient = services.GetRequiredService<IClusterClient>();
-              var grain = clusterClient.GetGrain<IUrlShortnerStatisticsGrain>("url_shortner_statistics");
-              return grain.Initialize();
-          });
+              var grainFactory = services.GetRequiredService<IGrainFactory>();
+
+              var grainStats = grainFactory.GetGrain<IUrlShortnerStatisticsGrain>("url_shortner_statistics");
+              var grainObservers = grainFactory.GetGrain<IRegistrationObserversManager>(0);
+
+              await Task.WhenAll(
+                  grainObservers.Activate(),
+                  grainStats.Activate());
+          }, ServiceLifecycleStage.Last);
 
     siloBuilder.UseDashboard(dashboardConfig =>
     {
