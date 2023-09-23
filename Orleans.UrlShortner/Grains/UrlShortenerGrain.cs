@@ -74,7 +74,7 @@ public class UrlShortenerGrain : Grain, IUrlShortenerGrain, IRemindable
     {
         this.state.State.Invocations += 1;
 
-        if (string.IsNullOrWhiteSpace(thisstate.State.FullUrl)) { throw new ShortenedRouteSegmentNotFound(); }
+        if (string.IsNullOrWhiteSpace(this.state.State.FullUrl)) { throw new ShortenedRouteSegmentNotFound(); }
         if (this.state.State.IsOneShoot && this.state.State.Invocations > 1) { throw new InvocationExcedeedException(); }
         if (DateTime.UtcNow > this.state.State.Expiration) { throw new ExpiredShortenedRouteSegmentException(); }
 
