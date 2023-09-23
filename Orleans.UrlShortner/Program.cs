@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using Orleans.Configuration;
 using Orleans.UrlShortner.Filters;
 using Orleans.UrlShortner.Grains;
 using Orleans.UrlShortner.Infrastructure.Exceptions;
@@ -38,6 +39,42 @@ builder.Host.UseOrleans(siloBuilder =>
         siloBuilder.AddMemoryGrainStorage("domainstatisticsstorage");
         siloBuilder.AddMemoryGrainStorage("applicationstatisticsstorage");
         siloBuilder.AddMemoryGrainStorage("urlshortnerstorage");
+    }
+    else
+    {
+        // CREAZIONE DEL CLUSTER PER AMBIENTI DI STAGING / PRODUZIONE
+        siloBuilder.Configure<ClusterOptions>(options =>
+        {
+            options.ClusterId = "CodicePlasticoCluster";
+            options.ServiceId = "OrleansUrlShortener";
+        })
+        .UseAdoNetClustering(options =>
+        {
+            options.ConnectionString = builder.Configuration.GetConnectionString("SqlOrleans");
+            options.Invariant = "System.Data.SqlClient";
+        })
+        .ConfigureEndpoints(siloPort: 11111, gatewayPort: 30000);
+
+        // REGISTRAZIONE REMINDERS PER AMBIENTI DI STAGING / PRODUZIONE
+        siloBuilder.UseAdoNetReminderService(reminderOptions => {
+            reminderOptions.ConnectionString = builder.Configuration.GetConnectionString("SqlOrleans");
+            reminderOptions.Invariant = "System.Data.SqlClient";
+        });
+
+        // REGISTRAZIONE STORAGE PER AMBIENTI DI STAGING / PRODUZIONE
+        siloBuilder.AddAdoNetGrainStorage("domainstatisticsstorage", storageOptions =>
+        {
+            storageOptions.ConnectionString = builder.Configuration.GetConnectionString("SqlOrleans");
+            storageOptions.Invariant = "System.Data.SqlClient";
+        }).AddAdoNetGrainStorage("applicationstatisticsstorage", storageOptions =>
+        {
+            storageOptions.ConnectionString = builder.Configuration.GetConnectionString("SqlOrleans");
+            storageOptions.Invariant = "System.Data.SqlClient";
+        }).AddAdoNetGrainStorage("urlshortnerstorage", storageOptions =>
+        {
+            storageOptions.ConnectionString = builder.Configuration.GetConnectionString("SqlOrleans");
+            storageOptions.Invariant = "System.Data.SqlClient";
+        });
     }
 
     // Attivo il grano delle statistiche alla partenza dell'applicazione
