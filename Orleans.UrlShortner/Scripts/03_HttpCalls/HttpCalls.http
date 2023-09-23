@@ -1,0 +1,36 @@
+﻿POST https://localhost:7021/shorten
+Content-Type: application/json
+
+{
+    "Url": "https://www.google.it",
+    "IsOneShoot": false,
+    "DurationInSeconds": 60
+}
+
+
+###
+POST https://localhost:7021/shorten
+Content-Type: application/json
+
+{
+    "Url": "https://www.alice.it",
+    "IsOneShoot": false,
+    "DurationInSeconds": 60
+}
+
+
+
+###
+GET https://localhost:7021/statistics
+Accept: application/json
+
+
+
+###
+GET https://localhost:7021/statistics/www.google.it
+Accept: application/json
+
+
+###
+GET https://localhost:7021/statistics/www.alice.it
+Accept: application/json
