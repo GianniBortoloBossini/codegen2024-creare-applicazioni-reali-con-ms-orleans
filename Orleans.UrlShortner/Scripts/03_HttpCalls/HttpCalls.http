@@ -4,6 +4,17 @@ Content-Type: application/json
 {
     "Url": "https://www.google.it",
     "IsOneShoot": false,
+    "DurationInSeconds": 3
+}
+
+
+###
+POST https://localhost:7021/shorten
+Content-Type: application/json
+
+{
+    "Url": "https://www.google.it",
+    "IsOneShoot": false,
     "DurationInSeconds": 60
 }
 

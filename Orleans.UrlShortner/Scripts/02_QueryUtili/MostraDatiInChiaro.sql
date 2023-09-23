@@ -1,15 +1,12 @@
-SELECT TOP (1000) [GrainIdHash]
+﻿SELECT TOP (1000) [GrainIdHash]
       ,[GrainIdN0]
       ,[GrainIdN1]
       ,[GrainTypeHash]
       ,[GrainTypeString]
       ,[GrainIdExtensionString]
       ,[ServiceId]
-      --,[PayloadBinary]
+      ,[PayloadBinary]
 	  ,CAST([PayloadBinary] AS VARCHAR(MAX)) AS PayloadJson
       ,[ModifiedOn]
       ,[Version]
   FROM [UrlShortener].[dbo].[OrleansStorage]
-
-TRUNCATE TABLE [UrlShortener].[dbo].[OrleansStorage]
-TRUNCATE TABLE [UrlShortener].[dbo].[OrleansRemindersTable]
