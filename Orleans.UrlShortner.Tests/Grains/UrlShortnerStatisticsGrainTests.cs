@@ -50,7 +50,7 @@ internal class UrlShortnerStatisticsGrainTests
     {
         // ARRANGE
         var applicationStatisticsGrain = fixture.Cluster.GrainFactory.GetGrain<IUrlShortnerStatisticsGrain>("url_shortner_statistics");
-        await applicationStatisticsGrain.Initialize();
+        await applicationStatisticsGrain.Activate();
 
         var domainWithoutStatistics = (new Uri("https://www.codiceplastico.com/")).Host;
         var domainWithoutStatisticsGrain = fixture.Cluster.GrainFactory.GetGrain<IDomainStatisticsGrain>(domainWithoutStatistics);
