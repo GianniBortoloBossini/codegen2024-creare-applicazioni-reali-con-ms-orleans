@@ -10,11 +10,11 @@ public class IncomingLoggingCallFilter : IIncomingGrainCallFilter
         this.logger = logger;
     }
 
-public async Task Invoke(IIncomingGrainCallContext context)
+    public async Task Invoke(IIncomingGrainCallContext context)
     {
         try
         {
-            if (IsApplicationInterface(context))
+            if (!IsApplicationInterface(context))
                 logger.LogInformation(CALL_INFO,
                                 context.TargetContext.GrainId.Key,
                                 context.InterfaceType,
@@ -22,7 +22,7 @@ public async Task Invoke(IIncomingGrainCallContext context)
 
             await context.Invoke();
 
-            if (IsApplicationInterface(context))
+            if (!IsApplicationInterface(context))
                 logger.LogInformation($"{CALL_INFO}[result={{3}}]",
                 context.TargetContext.GrainId.Key,
                 context.InterfaceType,

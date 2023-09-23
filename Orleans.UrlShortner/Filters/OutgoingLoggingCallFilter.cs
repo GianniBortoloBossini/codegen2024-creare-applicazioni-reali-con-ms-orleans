@@ -14,7 +14,7 @@ public class OutgoingLoggingCallFilter : IOutgoingGrainCallFilter
     {
         try
         {
-            if (context.InterfaceType.ToString().StartsWith("Orleans.UrlShortner"))
+            if (!IsApplicationInterface(context))
                 logger.LogInformation(CALL_INFO,
                 GetSourceId(context),
                 context.TargetId.Key,
@@ -23,7 +23,7 @@ public class OutgoingLoggingCallFilter : IOutgoingGrainCallFilter
 
             await context.Invoke();
 
-            if (context.InterfaceType.ToString().StartsWith("Orleans.UrlShortner"))
+            if (!IsApplicationInterface(context))
                 logger.LogInformation($"{CALL_INFO}[result={{4}}]",
                 GetSourceId(context),
                 context.TargetId.Key,
@@ -46,4 +46,7 @@ public class OutgoingLoggingCallFilter : IOutgoingGrainCallFilter
 
     private static object GetSourceId(IOutgoingGrainCallContext context)
         => context.SourceId.HasValue ? context.SourceId.Value.Key : "<none>";
+
+    private static bool IsApplicationInterface(IOutgoingGrainCallContext context)
+    => context.InterfaceType != null && context.InterfaceType.ToString().StartsWith("Orleans.UrlShortner");
 }
