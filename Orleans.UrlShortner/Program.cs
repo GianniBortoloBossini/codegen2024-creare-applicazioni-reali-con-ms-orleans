@@ -93,7 +93,7 @@ app.MapPost("/shorten",
 
         // Attivazione di un grain legato all'host
         var uri = new Uri(data.Url);
-        var domainGrain = client.GetGrain<IDomainGrain>(uri.Host);
+        var domainGrain = client.GetGrain<IDomainStatisticsGrain>(uri.Host);
         await domainGrain.Initialize();
 
         // Creazione di un ID univoco
@@ -163,7 +163,7 @@ statisticsGroup.MapGet("/{domain}",
     async (IClusterClient client, [FromRoute] string domain) =>
     {
         // Recupero della reference al grano identificato dall'ID univoco
-        var domainGrain = client.GetGrain<IDomainGrain>(domain);
+        var domainGrain = client.GetGrain<IDomainStatisticsGrain>(domain);
 
         // Recupero della statistiche tramite metodo GetTotal del grano
         var totalActivations = await domainGrain.GetTotal();

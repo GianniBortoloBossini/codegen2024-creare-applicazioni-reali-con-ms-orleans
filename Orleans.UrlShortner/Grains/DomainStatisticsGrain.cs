@@ -3,7 +3,7 @@ using Orleans.UrlShortner.Observers;
 
 namespace Orleans.UrlShortner.Grains;
 
-public interface IDomainGrain : IGrainWithStringKey, IGrainObserver
+public interface IDomainStatisticsGrain : IGrainWithStringKey, IGrainObserver
 {
     Task Initialize();
     [OneWay]
@@ -16,11 +16,11 @@ public interface IDomainGrain : IGrainWithStringKey, IGrainObserver
     Task<int> GetNumberOfActiveShortenedRouteSegment();
 }
 
-public class DomainGrain : Grain, IDomainGrain
+public class DomainStatisticsGrain : Grain, IDomainStatisticsGrain
 {
-    private readonly ILogger<IDomainGrain> logger;
+    private readonly ILogger<IDomainStatisticsGrain> logger;
 
-    public DomainGrain(ILogger<IDomainGrain> logger)
+    public DomainStatisticsGrain(ILogger<IDomainStatisticsGrain> logger)
     {
         this.logger = logger;
     }
@@ -31,7 +31,7 @@ public class DomainGrain : Grain, IDomainGrain
     public Task Initialize()
     {
         var friend = GrainFactory.GetGrain<IRegistrationObserversManager>(0);
-        var obj = this.AsReference<IDomainGrain>();
+        var obj = this.AsReference<IDomainStatisticsGrain>();
         return friend.Subscribe(obj);
     }
 

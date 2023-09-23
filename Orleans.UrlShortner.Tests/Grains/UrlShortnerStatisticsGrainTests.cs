@@ -53,23 +53,24 @@ internal class UrlShortnerStatisticsGrainTests
         await applicationStatisticsGrain.Initialize();
 
         var domainWithoutStatistics = (new Uri("https://www.codiceplastico.com/")).Host;
-        var domainWithoutStatisticsGrain = fixture.Cluster.GrainFactory.GetGrain<IDomainGrain>(domainWithoutStatistics);
+        var domainWithoutStatisticsGrain = fixture.Cluster.GrainFactory.GetGrain<IDomainStatisticsGrain>(domainWithoutStatistics);
         await domainWithoutStatisticsGrain.Initialize();
 
         var url = "https://capitalecultura2023.it/";
         var domain = (new Uri(url)).Host;
-        var domainStatisticsGrain = fixture.Cluster.GrainFactory.GetGrain<IDomainGrain>(domain);
+        var domainStatisticsGrain = fixture.Cluster.GrainFactory.GetGrain<IDomainStatisticsGrain>(domain);
         await domainStatisticsGrain.Initialize();
 
         var shortenerRouteSegmentWorker = fixture.Cluster.GrainFactory.GetGrain<IShortenedRouteSegmentStatelessWorker>(0);
-        var shortenerRouteSegment = await shortenerRouteSegmentWorker.Create(url);
+        var shortenerRouteSegment1 = await shortenerRouteSegmentWorker.Create(url);
+        var shortenerRouteSegment2 = await shortenerRouteSegmentWorker.Create(url);
 
-        var urlshortenerGrain = fixture.Cluster.GrainFactory.GetGrain<IUrlShortenerGrain>(shortenerRouteSegment);
+        var urlshortenerGrain1 = fixture.Cluster.GrainFactory.GetGrain<IUrlShortenerGrain>(shortenerRouteSegment1);
+        var urlshortenerGrain2 = fixture.Cluster.GrainFactory.GetGrain<IUrlShortenerGrain>(shortenerRouteSegment2);
 
         // ACT
-        await urlshortenerGrain.CreateShortUrl(url, false, 3);
-
-        var statisticsGrain = fixture.Cluster.GrainFactory.GetGrain<IUrlShortnerStatisticsGrain>("url_shortner_statistics");
+        await urlshortenerGrain1.CreateShortUrl(url, false, validFor);
+        await urlshortenerGrain2.CreateShortUrl(url, false, validFor);
 
         await Task.Delay(100);
 
@@ -81,11 +82,27 @@ internal class UrlShortnerStatisticsGrainTests
         var domainWithoutStatisticsNumberOfActiveShortenerRouteSegment = await domainWithoutStatisticsGrain.GetNumberOfActiveShortenedRouteSegment();
 
         // ASSERT
-        Assert.That(applicationTotalActivation, Is.EqualTo(1));
-        Assert.That(applicationNumberOfActiveShortenerRouteSegment, Is.EqualTo(1));
-        Assert.That(domainTotalActivation, Is.EqualTo(1));
-        Assert.That(domainNumberOfActiveShortenerRouteSegment, Is.EqualTo(1));
-        Assert.That(domainWithoutStatisticsTotalActivation, Is.EqualTo(0));
+        Assert.That(applicationTotalActivation, Is.EqualTo(2));
+        Assert.That(applicationNumberOfActiveShortenerRouteSegment, Is.EqualTo(2));
+        Assert.That(domainTotalActivation, Is.EqualTo(2));                      // https://capitalecultura2023.it/
+        Assert.That(domainNumberOfActiveShortenerRouteSegment, Is.EqualTo(2));
+        Assert.That(domainWithoutStatisticsTotalActivation, Is.EqualTo(0));     // https://www.codiceplastico.com/
+        Assert.That(domainWithoutStatisticsNumberOfActiveShortenerRouteSegment, Is.EqualTo(0));
+
+        await Task.Delay(checkAfter);
+
+        applicationTotalActivation = await applicationStatisticsGrain.GetTotal();
+        applicationNumberOfActiveShortenerRouteSegment = await applicationStatisticsGrain.GetNumberOfActiveShortenedRouteSegment();
+        domainTotalActivation = await domainStatisticsGrain.GetTotal();
+        domainNumberOfActiveShortenerRouteSegment = await domainStatisticsGrain.GetNumberOfActiveShortenedRouteSegment();
+        domainWithoutStatisticsTotalActivation = await domainWithoutStatisticsGrain.GetTotal();
+        domainWithoutStatisticsNumberOfActiveShortenerRouteSegment = await domainWithoutStatisticsGrain.GetNumberOfActiveShortenedRouteSegment();
+
+        Assert.That(applicationTotalActivation, Is.EqualTo(2));
+        Assert.That(applicationNumberOfActiveShortenerRouteSegment, Is.EqualTo(0));
+        Assert.That(domainTotalActivation, Is.EqualTo(2));                      // https://capitalecultura2023.it/
+        Assert.That(domainNumberOfActiveShortenerRouteSegment, Is.EqualTo(0));
+        Assert.That(domainWithoutStatisticsTotalActivation, Is.EqualTo(0));     // https://www.codiceplastico.com/
         Assert.That(domainWithoutStatisticsNumberOfActiveShortenerRouteSegment, Is.EqualTo(0));
     }
 }
