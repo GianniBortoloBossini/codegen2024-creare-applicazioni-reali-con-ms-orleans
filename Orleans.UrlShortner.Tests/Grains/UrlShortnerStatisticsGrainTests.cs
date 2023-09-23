@@ -56,7 +56,7 @@ internal class UrlShortnerStatisticsGrainTests
 
         var statisticsGrain = fixture.Cluster.GrainFactory.GetGrain<IUrlShortnerStatisticsGrain>("url_shortner_statistics");
 
-        await Task.Delay(validFor);
+        await Task.Delay(100);
 
         var totalActivation = await statisticsGrain.GetTotal();
         var numberOfActiveShortenerRouteSegment = await statisticsGrain.GetNumberOfActiveShortenedRouteSegment();
