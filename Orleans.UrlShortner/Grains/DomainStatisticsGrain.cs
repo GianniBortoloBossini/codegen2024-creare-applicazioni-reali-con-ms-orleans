@@ -15,7 +15,7 @@ public interface IDomainStatisticsGrain : IGrainWithStringKey, IGrainObserver
     Task<int> GetNumberOfActiveShortenedRouteSegment();
 }
 
-public class DomainStatisticsGrain : Grain, IDomainStatisticsGrain
+
 [GenerateSerializer]
 public class DomainStatisticsState
 {
@@ -28,9 +28,11 @@ public class DomainStatisticsState
 public class DomainStatisticsGrain : Grain, IDomainStatisticsGrain
 {
     private readonly IPersistentState<DomainStatisticsState> state;
-    private readonly ILogger<IDomainGrain> logger;
+    private readonly ILogger<IDomainStatisticsGrain> logger;
 
-    public DomainStatisticsGrain(ILogger<IDomainStatisticsGrain> logger)
+    public DomainStatisticsGrain(
+        [PersistentState(stateName: "domain-statistics", storageName: "domainstatisticsstorage")] IPersistentState<DomainStatisticsState> state,
+        ILogger<IDomainStatisticsGrain> logger)
     {
         this.state = state;
         this.logger = logger;
