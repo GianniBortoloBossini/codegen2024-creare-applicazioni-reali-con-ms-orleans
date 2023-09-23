@@ -23,12 +23,19 @@ public class UrlShortenerState
     public DateTime Expiration { get; set; }
     [Id(4)]
     public int Invocations { get; set; }
+    [Id(5)]
+    public string Domain { get; set; }
+    [Id(6)]
+    public bool IsReminderActive { get; set; }
+    [Id(7)]
+    public string ShortenedRouteSegmentExpiredReminderName { get; set; }
 }
 
 public class UrlShortenerGrain : Grain, IUrlShortenerGrain, IRemindable
 {
-    private IGrainReminder _reminder = null;
     private IDisposable _timer = null;
+    private IRegistrationObserversManager registrationManagerGrainReference;
+    private IGrainReminder shortenedRouteSegmentExpiredReminder;
     private readonly IPersistentState<UrlShortenerState> state;
     private readonly ILogger<UrlShortenerGrain> logger;
 
@@ -40,9 +47,30 @@ public class UrlShortenerGrain : Grain, IUrlShortenerGrain, IRemindable
         this.logger = logger;
     }
 
+    public override async Task OnActivateAsync(CancellationToken cancellationToken)
+    {
+        if (this.state.State.Domain is not null)
+        {
+            var domainGrain = GrainFactory.GetGrain<IDomainStatisticsGrain>(this.state.State.Domain);
+            await domainGrain.Activate();
+        }
+
+        this.registrationManagerGrainReference = GrainFactory.GetGrain<IRegistrationObserversManager>(0);
+
+        if (this.state.State.ShortenedRouteSegmentExpiredReminderName is not null)
+        {
+            this.shortenedRouteSegmentExpiredReminder = await this.GetReminder(this.state.State.ShortenedRouteSegmentExpiredReminderName);
+        }
+
+        await base.OnActivateAsync(cancellationToken);
+    }
+
     public async Task CreateShortUrl(string fullUrl, bool? isOneShoot, int? validFor)
     {
+        var uri = new Uri(fullUrl);
+
         this.state.State.FullUrl = fullUrl;
+        this.state.State.Domain = uri.Host;
         this.state.State.IsOneShoot = isOneShoot ?? false;
         this.state.State.ValidFor = validFor switch
         {
@@ -56,9 +84,11 @@ public class UrlShortenerGrain : Grain, IUrlShortenerGrain, IRemindable
 
         if (this.state.State.ValidFor >= 60)
         {
-            _reminder = await this.RegisterOrUpdateReminder("shortenedRouteSegmentExpired",
+            this.state.State.ShortenedRouteSegmentExpiredReminderName = $"shortenedRouteSegmentExpired{this.GetPrimaryKeyString}";
+            var reminder = await this.RegisterOrUpdateReminder(this.state.State.ShortenedRouteSegmentExpiredReminderName,
                TimeSpan.Zero,
                TimeSpan.FromSeconds(this.state.State.ValidFor));
+            this.state.State.IsReminderActive = reminder != null;
         }
         else
         {
@@ -74,11 +104,11 @@ public class UrlShortenerGrain : Grain, IUrlShortenerGrain, IRemindable
     {
         this.state.State.Invocations += 1;
 
-        if (string.IsNullOrWhiteSpace(this.state.State.FullUrl)) { throw new ShortenedRouteSegmentNotFound(); }
+        if (string.IsNullOrWhiteSpace(this.state.State.FullUrl)) { throw new InvocationExcedeedException(); }
         if (this.state.State.IsOneShoot && this.state.State.Invocations > 1) { throw new InvocationExcedeedException(); }
         if (DateTime.UtcNow > this.state.State.Expiration) { throw new ExpiredShortenedRouteSegmentException(); }
 
-        if(this.state.State.IsOneShoot && this.state.State.Invocations == 1 && _reminder is not null)
+        if (this.state.State.IsOneShoot && this.state.State.Invocations == 1 && this.state.State.IsReminderActive)
             await ShortenedRouteSegmentExpired();
 
         return this.state.State.FullUrl;
@@ -88,26 +118,30 @@ public class UrlShortenerGrain : Grain, IUrlShortenerGrain, IRemindable
     {
         return reminderName switch
         {
-            "shortenedRouteSegmentExpired" => ShortenedRouteSegmentExpired(),
+            var r when r == this.state.State.ShortenedRouteSegmentExpiredReminderName => ShortenedRouteSegmentExpired(),
             _ => Task.CompletedTask
         };
     }
 
     private async Task ShortenedRouteSegmentExpired()
     {
-        if (_reminder is not null)
+        logger.LogInformation("ShortenedRouteSegmentExpired invoked in grain with ID {0}", this.GetPrimaryKeyString());
+
+        if (this.state.State.IsReminderActive)
         {
-            await this.UnregisterReminder(_reminder);
-            _reminder = null;
+            await this.UnregisterReminder(this.shortenedRouteSegmentExpiredReminder);
+            this.state.State.IsReminderActive = false;
+            logger.LogInformation("ShortenedRouteSegmentExpired unregister reminder in grain with ID {0}", this.GetPrimaryKeyString());
         }
 
-        var registrationManagerGrain = GrainFactory.GetGrain<IRegistrationObserversManager>(0);
-        await registrationManagerGrain.RegisterExpiration(this.state.State.FullUrl);
+        await registrationManagerGrainReference.RegisterExpiration(this.state.State.FullUrl);
+
+        logger.LogInformation("ShortenedRouteSegmentExpired expiration registered in grain with ID {0}", this.GetPrimaryKeyString());
     }
 
     private Task ReceiveTimer(object _)
     {
-        if(_timer is null)
+        if (_timer is null)
             return Task.CompletedTask;
 
         logger.LogInformation("ReceiveTimer invoked in grain with ID {0}", this.GetPrimaryKeyString());
@@ -115,7 +149,6 @@ public class UrlShortenerGrain : Grain, IUrlShortenerGrain, IRemindable
         _timer?.Dispose();
         logger.LogInformation("Timer disposed from grain with ID {0}", this.GetPrimaryKeyString());
 
-        var registrationManagerGrain = GrainFactory.GetGrain<IRegistrationObserversManager>(0);
-        return registrationManagerGrain.RegisterExpiration(this.state.State.FullUrl);
+        return registrationManagerGrainReference.RegisterExpiration(this.state.State.FullUrl);
     }
 }
