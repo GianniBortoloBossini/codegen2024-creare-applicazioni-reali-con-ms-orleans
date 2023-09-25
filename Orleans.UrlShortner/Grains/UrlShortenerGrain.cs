@@ -1,6 +1,7 @@
 ﻿using Orleans.Runtime;
 using Orleans.UrlShortner.Infrastructure.Exceptions;
 using Orleans.UrlShortner.Observers;
+using System.Threading.Tasks;
 
 namespace Orleans.UrlShortner.Grains;
 
@@ -84,7 +85,7 @@ public class UrlShortenerGrain : Grain, IUrlShortenerGrain, IRemindable
 
         if (this.state.State.ValidFor >= 60)
         {
-            this.state.State.ShortenedRouteSegmentExpiredReminderName = $"shortenedRouteSegmentExpired{this.GetPrimaryKeyString}";
+            this.state.State.ShortenedRouteSegmentExpiredReminderName = $"shortenedRouteSegmentExpired{this.GetPrimaryKeyString()}";
             var reminder = await this.RegisterOrUpdateReminder(this.state.State.ShortenedRouteSegmentExpiredReminderName,
                TimeSpan.Zero,
                TimeSpan.FromSeconds(this.state.State.ValidFor));
@@ -129,6 +130,7 @@ public class UrlShortenerGrain : Grain, IUrlShortenerGrain, IRemindable
 
         if (this.state.State.IsReminderActive)
         {
+            this.shortenedRouteSegmentExpiredReminder = await this.GetReminder(this.state.State.ShortenedRouteSegmentExpiredReminderName);
             await this.UnregisterReminder(this.shortenedRouteSegmentExpiredReminder);
             this.state.State.IsReminderActive = false;
             logger.LogInformation("ShortenedRouteSegmentExpired unregister reminder in grain with ID {0}", this.GetPrimaryKeyString());
