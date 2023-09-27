@@ -15,20 +15,23 @@ var builder = WebApplication.CreateBuilder(args);
 // *** REGISTRAZIONE E CONFIGURAZIONE DI ORLEANS ***
 builder.Host.UseOrleans(siloBuilder =>
 {
+    siloBuilder.ConfigureLogging(loggingConfig =>
+    {
+        Log.Logger = new LoggerConfiguration()
+                    .WriteTo.File("logs/log-.txt",
+                                  outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}",
+                                  rollingInterval: RollingInterval.Day)
+                    .CreateLogger();
+
+        loggingConfig.AddConsole().AddSerilog(Log.Logger);
+    });
+
+    siloBuilder.AddActivityPropagation();
+
     if (builder.Environment.IsDevelopment())
     {
+        // CLUSTER LOCALE
         siloBuilder.UseLocalhostClustering();
-        siloBuilder.ConfigureLogging(loggingConfig =>
-        {
-            Log.Logger = new LoggerConfiguration()
-                        .WriteTo.File("logs/log-.txt", 
-                                      outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}", 
-                                      rollingInterval: RollingInterval.Day)
-                        .CreateLogger();
-
-            loggingConfig.AddConsole().AddSerilog(Log.Logger);
-        });
-        siloBuilder.AddActivityPropagation();
 
         // ADD SILO-WIDE GRAIN CALL FILTERS
         siloBuilder.AddIncomingGrainCallFilter<LoggingCallFilter>();
