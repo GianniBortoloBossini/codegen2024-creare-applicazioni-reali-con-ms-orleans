@@ -1,5 +1,5 @@
 ﻿using Orleans.Concurrency;
-using Orleans.UrlShortner.Grains;
+using Orleans.UrlShortner.Abstractions;
 using Orleans.Utilities;
 
 namespace Orleans.UrlShortner.Observers;
@@ -8,7 +8,7 @@ public interface IRegistrationObserversManager : IGrainWithIntegerKey
 {
     [OneWay]
     Task Activate();
-    Task Subscribe(IDomainStatisticsGrain observer);
+    Task Subscribe(Abstractions.IDomainStatisticsGrain observer);
     Task Subscribe(IUrlShortnerStatisticsGrain observer);
     Task Unsubscribe(IDomainStatisticsGrain observer);
     Task Unsubscribe(IUrlShortnerStatisticsGrain observer);

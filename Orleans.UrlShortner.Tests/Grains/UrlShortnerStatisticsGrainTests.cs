@@ -1,4 +1,5 @@
-﻿using Orleans.UrlShortner.Grains;
+﻿using Orleans.UrlShortner.Abstractions;
+using Orleans.UrlShortner.Abstractions.StatelessWorkers;
 using Orleans.UrlShortner.StatelessWorkers;
 using Orleans.UrlShortner.Tests.Fixtures;
 

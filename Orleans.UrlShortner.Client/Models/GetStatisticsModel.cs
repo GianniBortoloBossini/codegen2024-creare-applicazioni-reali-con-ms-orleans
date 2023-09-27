@@ -1,4 +1,4 @@
-﻿namespace Orleans.UrlShortner.Models;
+﻿namespace Orleans.UrlShortner.Client.Models;
 
 public class GetStatisticsModel
 {

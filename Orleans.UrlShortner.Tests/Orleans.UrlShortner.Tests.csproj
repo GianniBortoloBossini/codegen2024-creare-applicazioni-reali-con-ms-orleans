@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Orleans.UrlShortner.Abstractions\Orleans.UrlShortner.Abstractions.csproj" />
     <ProjectReference Include="..\Orleans.UrlShortner\Orleans.UrlShortner.csproj" />
   </ItemGroup>
 
