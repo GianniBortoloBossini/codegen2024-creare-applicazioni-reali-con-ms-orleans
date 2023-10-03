@@ -2,7 +2,7 @@
 
 Progetto per la realizzazione di un applicativo UrlShortener utilizando Microsoft Orleans.
 
-## COntenuto del repository
+## Contenuto del repository
 
 ### Slides
 la cartella `Slides` contiene la presentazione della sessione.
