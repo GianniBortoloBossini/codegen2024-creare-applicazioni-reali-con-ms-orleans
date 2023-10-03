@@ -1,68 +1,21 @@
 ﻿# Orleans.UrlShortner
 
-Progetto per la realizzazione di un applicativo UrlShortener.
+Progetto per la realizzazione di un applicativo UrlShortener utilizando Microsoft Orleans.
 
-## Setup del progetto
+## COntenuto del repository
 
-Per inizializzare il progetto è necessario
-- Creazione del file di soluzione
-  `dotnet new sln -n Orleans.UrlShortner -o .\Orleans.UrlShortner\`
-- Mi sposto nella cartella creata 
-  `cd Orleans.UrlShortner`
-- Creazione del progetto Minimal API
-  `dotnet new web`
-- All'interno del file `Program.cs` elimino l'endpoint `app.MapGet("/", () => "Hello World!");`
-- Aggiungo il pacchetto Nuget `dotnet add package Microsoft.Orleans.Server`
-- Per aggiungere un silo alla nostra app ci servirà il seguente codice
-  ```
-  builder.Host.UseOrleans(siloBuilder =>
-  {
-    if (builder.Environment.IsDevelopment())
-    {
-        siloBuilder.UseLocalhostClustering();
-    }
-  });
-  ```
-- Sempre nel file Program.cs aggiungo le seguenti rotte
-  ```
-  app.MapPost("/shorten",
-    async (IGrainFactory grains, HttpRequest request, [FromQuery] string url) =>
-    {
-        var host = $"{request.Scheme}://{request.Host.Value}";
+### Slides
+la cartella `Slides` contiene la presentazione della sessione.
 
-        // Validate the URL query string.
-        if (string.IsNullOrWhiteSpace(url) && Uri.IsWellFormedUriString(url, UriKind.Absolute) is false)
-            return Results.BadRequest($"""
-                The URL query string is required and needs to be well formed.
-                Consider, ${host}/shorten?https://www.microsoft.com
-                """);
+### Branches
+Di seguito una breve spiegazione del contnuto dei branches:
 
-        // Create a unique, short ID
-        var shortenedRouteSegment = Guid.NewGuid().GetHashCode().ToString("X");
+- `1_grains_and_tests`: startup di un'applicazione basata su Microsoft Orleans, come testarla e come migliorarne le performance con gli attributi `OneWay` e `ReadOnly`
+- `2_log_dashboard_and_metrics`: aggiunta dei log, della dashboard e del tracing su Zipkin per garantire l'osservabilità dell'applicazione
+- `3_reminders_and_stateless_workers`: esploriamo i service grain (stateless worker) e come schedulare attività con Timers e Reminder
+- `4_incoming_and_outgoing_filters`: aggiunta dei filtri sia a livello di grain che a livello di silos
+- `5_observers`: si vedrà come sottoscrivere notifiche provenienti da altri grain tramite l'interfaccia `IObservable`
+- `6_persistence`: aggiungiamo la persistenza dello stato dei grains
+- `7_production_ready`: passiamo da un'applicazione in memory, tipida dell'ambiente di sviluppo, ad un'applicazione production-ready
+- `8_external_clients`: passaggio da un'architettura `co-hosted clients` ad una `external clients`
 
-        // Create and persist a grain with the shotened ID and full URL
-        var shortenerGrain = grains.GetGrain<IUrlShortenerGrain>(shortenedRouteSegment);
-        await shortenerGrain.SetUrl(url);
-
-        // Return the shortened URL for later use
-        var resultBuilder = new UriBuilder(host)
-        {
-            Path = $"/go/{shortenedRouteSegment}"
-        };
-
-        return Results.Ok(resultBuilder.Uri);
-    });
-  ```
-  ```
-  app.MapGet("/go/{shortenedRouteSegment:required}",
-    async (IGrainFactory grains, string shortenedRouteSegment) =>
-    {
-        // Retrieve the grain using the shortened ID and url to the original URL
-        var shortenedGrain = grains.GetGrain<IUrlShortenerGrain>(shortenedRouteSegment);
-        var url = await shortenedGrain.GetUrl();
-
-        if (url is null) return Results.BadRequest();
-
-        return Results.Redirect(url);
-    });
-  ```
