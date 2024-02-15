@@ -6,7 +6,8 @@ namespace Orleans.UrlShortner.Grains;
 
 public interface IDomainStatisticsGrain : IGrainWithStringKey, IGrainObserver
 {
-    Task Initialize();
+    [OneWay]
+    Task Activate();
     Task RegisterNew();
     Task RegisterExpiration();
     [ReadOnly]
@@ -14,7 +15,6 @@ public interface IDomainStatisticsGrain : IGrainWithStringKey, IGrainObserver
     [ReadOnly]
     Task<int> GetNumberOfActiveShortenedRouteSegment();
 }
-
 
 [GenerateSerializer]
 public class DomainStatisticsState
@@ -38,12 +38,17 @@ public class DomainStatisticsGrain : Grain, IDomainStatisticsGrain
         this.logger = logger;
     }
 
-    public Task Initialize()
+    public override async Task OnActivateAsync(CancellationToken cancellationToken)
     {
         var friend = GrainFactory.GetGrain<IRegistrationObserversManager>(0);
         var obj = this.AsReference<IDomainStatisticsGrain>();
-        return friend.Subscribe(obj);
+        await friend.Subscribe(obj);
+
+        await base.OnActivateAsync(cancellationToken);
     }
+
+    public Task Activate()
+        => Task.CompletedTask;
 
     public Task<int> GetTotal()
     {
@@ -63,8 +68,8 @@ public class DomainStatisticsGrain : Grain, IDomainStatisticsGrain
     {
         logger.LogInformation($"New activation registered!");
 
-        this.state.State.TotalActivations++;
-        this.state.State.NumberOfActiveShortenedRouteSegment++;
+        this.state.State.TotalActivations += 1;
+        this.state.State.NumberOfActiveShortenedRouteSegment += 1;
 
         return state.WriteStateAsync();
     }
@@ -73,7 +78,7 @@ public class DomainStatisticsGrain : Grain, IDomainStatisticsGrain
     {
         logger.LogInformation($"Activation expired!");
 
-        this.state.State.NumberOfActiveShortenedRouteSegment--;
+        this.state.State.NumberOfActiveShortenedRouteSegment -= 1;
 
         return state.WriteStateAsync();
     }

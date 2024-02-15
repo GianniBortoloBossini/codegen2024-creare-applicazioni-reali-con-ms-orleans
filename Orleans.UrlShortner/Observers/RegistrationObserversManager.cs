@@ -1,10 +1,13 @@
-﻿using Orleans.UrlShortner.Grains;
+﻿using Orleans.Concurrency;
+using Orleans.UrlShortner.Grains;
 using Orleans.Utilities;
 
 namespace Orleans.UrlShortner.Observers;
 
 public interface IRegistrationObserversManager : IGrainWithIntegerKey
 {
+    [OneWay]
+    Task Activate();
     Task Subscribe(IDomainStatisticsGrain observer);
     Task Subscribe(IUrlShortnerStatisticsGrain observer);
     Task Unsubscribe(IDomainStatisticsGrain observer);
@@ -19,34 +22,35 @@ public class RegistrationObserversManager : Grain, IRegistrationObserversManager
 {
     private readonly ObserverManager<IUrlShortnerStatisticsGrain> subsStatisticsManager;
     private readonly ObserverManager<IDomainStatisticsGrain> subsDomainsManager;
+    private readonly ILogger<IRegistrationObserversManager> logger;
 
     public RegistrationObserversManager(ILogger<IRegistrationObserversManager> logger)
     {
-        this.subsStatisticsManager = new ObserverManager<IUrlShortnerStatisticsGrain>(TimeSpan.FromMinutes(5), logger);
-        this.subsDomainsManager = new ObserverManager<IDomainStatisticsGrain>(TimeSpan.FromMinutes(5), logger);
+        this.subsStatisticsManager = new ObserverManager<IUrlShortnerStatisticsGrain>(TimeSpan.FromDays(7), logger);
+        this.subsDomainsManager = new ObserverManager<IDomainStatisticsGrain>(TimeSpan.FromDays(7), logger);
+        this.logger = logger;
     }
+
+    public Task Activate()
+        => Task.CompletedTask;
 
     public Task RegisterNew(string url)
-    {
-        this.subsStatisticsManager.Notify(s => s.RegisterNew());
-        this.subsDomainsManager.Notify(s => s.RegisterNew(), s => {
-            var uri = new Uri(url);
-            return s.GetPrimaryKeyString() == uri.Host;
-            });
-
-        return Task.CompletedTask;
-    }
+        => Task.WhenAll(
+            this.subsStatisticsManager.Notify(s => s.RegisterNew()),
+            this.subsDomainsManager.Notify(s => s.RegisterNew(), s => {
+                var uri = new Uri(url);
+                return s.GetPrimaryKeyString() == uri.Host;
+            }));
 
     public Task RegisterExpiration(string url)
-    {
-        this.subsStatisticsManager.Notify(s => s.RegisterExpiration());
-        this.subsDomainsManager.Notify(s => s.RegisterExpiration(), s => {
-            var uri = new Uri(url);
-            return s.GetPrimaryKeyString() == uri.Host;
-        });
+    => Task.WhenAll(
+            this.subsStatisticsManager.Notify(s => s.RegisterExpiration()),
+            this.subsDomainsManager.Notify(s => s.RegisterExpiration(), s =>
+            {
+                var uri = new Uri(url);
+                return s.GetPrimaryKeyString() == uri.Host;
+            }));
 
-        return Task.CompletedTask;
-    }
 
     public Task Subscribe(IDomainStatisticsGrain observer)
     {

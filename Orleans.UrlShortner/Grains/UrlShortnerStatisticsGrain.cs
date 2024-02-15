@@ -6,7 +6,8 @@ namespace Orleans.UrlShortner.Grains;
 
 public interface IUrlShortnerStatisticsGrain : IGrainWithStringKey, IGrainObserver
 {
-    Task Initialize();
+    [OneWay]
+    Task Activate();
     Task RegisterNew();
     Task RegisterExpiration();
     [ReadOnly]
@@ -37,21 +38,17 @@ public class UrlShortnerStatisticsGrain : Grain, IUrlShortnerStatisticsGrain
         this.logger = logger;
     }
 
-    public override async Task OnDeactivateAsync(DeactivationReason reason, CancellationToken token)
-    {
-        await base.OnDeactivateAsync(reason, token);
-
-        var friend = GrainFactory.GetGrain<IRegistrationObserversManager>(0);
-        var obj = this.AsReference<UrlShortnerStatisticsGrain>();
-        await friend.Unsubscribe(obj);
-    }
-
-    public Task Initialize()
+    public override async Task OnActivateAsync(CancellationToken cancellationToken)
     {
         var friend = GrainFactory.GetGrain<IRegistrationObserversManager>(0);
         var obj = this.AsReference<IUrlShortnerStatisticsGrain>();
-        return friend.Subscribe(obj);
+        await friend.Subscribe(obj);
+
+        await base.OnActivateAsync(cancellationToken);
     }
+
+    public Task Activate()
+        => Task.CompletedTask;
 
     public Task<int> GetTotal()
     {
@@ -71,8 +68,8 @@ public class UrlShortnerStatisticsGrain : Grain, IUrlShortnerStatisticsGrain
     {
         logger.LogInformation($"New activation registered!");
 
-        this.state.State.TotalActivations++;
-        this.state.State.NumberOfActiveShortenedRouteSegment++;
+        this.state.State.TotalActivations += 1;
+        this.state.State.NumberOfActiveShortenedRouteSegment += 1;
 
         return state.WriteStateAsync();
     }
@@ -81,7 +78,7 @@ public class UrlShortnerStatisticsGrain : Grain, IUrlShortnerStatisticsGrain
     {
         logger.LogInformation($"Activation expired!");
 
-        this.state.State.NumberOfActiveShortenedRouteSegment--;
+        this.state.State.NumberOfActiveShortenedRouteSegment -= 1;
 
         return state.WriteStateAsync();
     }
