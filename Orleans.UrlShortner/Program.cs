@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using Orleans.UrlShortner.Filters;
 using Orleans.UrlShortner.Grains;
 using Orleans.UrlShortner.Infrastructure.Exceptions;
 using Orleans.UrlShortner.Models;
@@ -26,6 +27,10 @@ builder.Host.UseOrleans(siloBuilder =>
             loggingConfig.AddConsole().AddSerilog(Log.Logger);
         });
         siloBuilder.AddActivityPropagation();
+
+        // ADD SILO-WIDE GRAIN CALL FILTERS
+        siloBuilder.AddIncomingGrainCallFilter<IncomingLoggingCallFilter>();
+        siloBuilder.AddOutgoingGrainCallFilter<OutgoingLoggingCallFilter>();
 
         // REGISTRAZIONE REMINDERS
         siloBuilder.UseInMemoryReminderService();
@@ -80,7 +85,7 @@ app.MapPost("/shorten",
 
         // Creazione di un ID univoco
         var shortenerRouteSegmentWorker = client.GetGrain<IShortenedRouteSegmentStatelessWorker>(0);
-        var shortenedRouteSegment = await shortenerRouteSegmentWorker.Create();
+        var shortenedRouteSegment = await shortenerRouteSegmentWorker.Create(data.Url);
 
         // Creazione del grano 
         var shortenerGrain = client.GetGrain<IUrlShortenerGrain>(shortenedRouteSegment);
