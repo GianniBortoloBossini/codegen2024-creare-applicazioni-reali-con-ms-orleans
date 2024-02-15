@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Orleans.UrlShortner.Grains;
 using Orleans.UrlShortner.Infrastructure.Exceptions;
 using Orleans.UrlShortner.Models;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,8 +14,43 @@ builder.Host.UseOrleans(siloBuilder =>
     if (builder.Environment.IsDevelopment())
     {
         siloBuilder.UseLocalhostClustering();
+        siloBuilder.ConfigureLogging(loggingConfig =>
+        {
+            Log.Logger = new LoggerConfiguration()
+                        .WriteTo.File("logs/log-.txt", 
+                                      outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}", 
+                                      rollingInterval: RollingInterval.Day)
+                        .CreateLogger();
+
+            loggingConfig.AddConsole().AddSerilog(Log.Logger);
+        });
+        siloBuilder.AddActivityPropagation();
     }
+
+    siloBuilder.UseDashboard(dashboardConfig =>
+    {
+        dashboardConfig.Port = 7070;
+        dashboardConfig.Username = "admin";
+        dashboardConfig.Password = "admin";
+    });
 });
+
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing =>
+    {
+        // Set a service name
+        tracing.SetResourceBuilder(
+            ResourceBuilder.CreateDefault()
+                .AddService(serviceName: "UrlShortner", serviceVersion: "1.0"));
+
+        tracing.AddSource("Microsoft.Orleans.Runtime");
+        tracing.AddSource("Microsoft.Orleans.Application");
+
+        tracing.AddZipkinExporter(zipkin =>
+        {
+            zipkin.Endpoint = new Uri("http://localhost:9411/api/v2/spans");
+        });
+    });
 
 // Registrazione dei servizi del supporto Swagger
 builder.Services.AddEndpointsApiExplorer();
