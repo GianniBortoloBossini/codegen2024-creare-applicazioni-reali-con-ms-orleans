@@ -1,15 +1,9 @@
 ﻿using Orleans.Runtime;
+using Orleans.UrlShortner.Abstractions;
 using Orleans.UrlShortner.Infrastructure.Exceptions;
 using Orleans.UrlShortner.Observers;
-using System.Threading.Tasks;
 
 namespace Orleans.UrlShortner.Grains;
-
-public interface IUrlShortenerGrain : IGrainWithStringKey
-{
-    Task CreateShortUrl(string fullUrl, bool? isOneShoot, int? validFor);
-    Task<string> GetUrl();
-}
 
 [GenerateSerializer]
 public class UrlShortenerState

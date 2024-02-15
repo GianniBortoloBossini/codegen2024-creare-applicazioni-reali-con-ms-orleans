@@ -1,20 +1,8 @@
-﻿using Orleans.Concurrency;
-using Orleans.Runtime;
+﻿using Orleans.Runtime;
+using Orleans.UrlShortner.Abstractions;
 using Orleans.UrlShortner.Observers;
 
 namespace Orleans.UrlShortner.Grains;
-
-public interface IUrlShortnerStatisticsGrain : IGrainWithStringKey, IGrainObserver
-{
-    [OneWay]
-    Task Activate();
-    Task RegisterNew();
-    Task RegisterExpiration();
-    [ReadOnly]
-    Task<int> GetTotal();
-    [ReadOnly]
-    Task<int> GetNumberOfActiveShortenedRouteSegment();
-}
 
 [GenerateSerializer]
 public class ApplicationStatisticsState

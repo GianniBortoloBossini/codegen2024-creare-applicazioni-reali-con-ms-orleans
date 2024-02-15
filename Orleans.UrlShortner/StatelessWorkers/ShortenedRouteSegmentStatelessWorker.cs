@@ -1,11 +1,7 @@
 ﻿using Orleans.Concurrency;
+using Orleans.UrlShortner.Abstractions.StatelessWorkers;
 
 namespace Orleans.UrlShortner.StatelessWorkers;
-
-public interface IShortenedRouteSegmentStatelessWorker : IGrainWithIntegerKey, IIncomingGrainCallFilter
-{
-    Task<string> Create(string url);
-}
 
 [StatelessWorker]
 public class ShortenedRouteSegmentStatelessWorker : Grain, IShortenedRouteSegmentStatelessWorker
