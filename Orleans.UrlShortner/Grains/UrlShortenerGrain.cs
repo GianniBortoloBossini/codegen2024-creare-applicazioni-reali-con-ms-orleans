@@ -1,5 +1,6 @@
 ﻿using Orleans.Runtime;
 using Orleans.UrlShortner.Infrastructure.Exceptions;
+using Orleans.UrlShortner.Observers;
 
 namespace Orleans.UrlShortner.Grains;
 
@@ -30,11 +31,15 @@ public class UrlShortenerGrain : Grain, IUrlShortenerGrain, IRemindable
     {
         this.FullUrl = fullUrl;
         this.IsOneShoot = isOneShoot ?? false;
-        this.ValidFor = validFor ?? 60;
+        this.ValidFor = validFor switch
+        {
+            var x when x is null || x == 0 => 60,
+            _ => validFor.Value
+        };
         this.Expiration = DateTime.UtcNow.AddSeconds(ValidFor);
 
-        var statsGrain = GrainFactory.GetGrain<IUrlShortnerStatisticsGrain>("url_shortner_statistics");
-        await statsGrain.RegisterNew();
+        var registrationManagerGrain = GrainFactory.GetGrain<IRegistrationObserversManager>(0);
+        await registrationManagerGrain.RegisterNew(this.FullUrl);
 
         if (ValidFor >= 60)
         {
@@ -81,8 +86,8 @@ public class UrlShortenerGrain : Grain, IUrlShortenerGrain, IRemindable
             _reminder = null;
         }
 
-        var statsGrain = GrainFactory.GetGrain<IUrlShortnerStatisticsGrain>("url_shortner_statistics");
-        await statsGrain.RegisterExpiration();
+        var registrationManagerGrain = GrainFactory.GetGrain<IRegistrationObserversManager>(0);
+        await registrationManagerGrain.RegisterExpiration(this.FullUrl);
     }
 
     private Task ReceiveTimer(object _)
@@ -95,7 +100,7 @@ public class UrlShortenerGrain : Grain, IUrlShortenerGrain, IRemindable
         _timer?.Dispose();
         logger.LogInformation("Timer disposed from grain with ID {0}", this.GetPrimaryKeyString());
 
-        var statsGrain = GrainFactory.GetGrain<IUrlShortnerStatisticsGrain>("url_shortner_statistics");
-        return statsGrain.RegisterExpiration();
+        var registrationManagerGrain = GrainFactory.GetGrain<IRegistrationObserversManager>(0);
+        return registrationManagerGrain.RegisterExpiration(this.FullUrl);
     }
 }

@@ -29,12 +29,20 @@ builder.Host.UseOrleans(siloBuilder =>
         siloBuilder.AddActivityPropagation();
 
         // ADD SILO-WIDE GRAIN CALL FILTERS
-        siloBuilder.AddIncomingGrainCallFilter<IncomingLoggingCallFilter>();
-        siloBuilder.AddOutgoingGrainCallFilter<OutgoingLoggingCallFilter>();
+        siloBuilder.AddIncomingGrainCallFilter<LoggingCallFilter>();
 
         // REGISTRAZIONE REMINDERS
         siloBuilder.UseInMemoryReminderService();
     }
+
+    // Attivo il grano delle statistiche alla partenza dell'applicazione
+    siloBuilder.AddStartupTask(
+          (IServiceProvider services, CancellationToken cancellation) =>
+          {
+              var clusterClient = services.GetRequiredService<IClusterClient>();
+              var grain = clusterClient.GetGrain<IUrlShortnerStatisticsGrain>("url_shortner_statistics");
+              return grain.Initialize();
+          });
 
     siloBuilder.UseDashboard(dashboardConfig =>
     {
@@ -83,6 +91,11 @@ app.MapPost("/shorten",
         if (string.IsNullOrWhiteSpace(data.Url) && Uri.IsWellFormedUriString(data.Url, UriKind.Absolute) is false)
             return Results.BadRequest($"Valore del campo URL non valido.");
 
+        // Attivazione di un grain legato all'host
+        var uri = new Uri(data.Url);
+        var domainGrain = client.GetGrain<IDomainStatisticsGrain>(uri.Host);
+        await domainGrain.Initialize();
+
         // Creazione di un ID univoco
         var shortenerRouteSegmentWorker = client.GetGrain<IShortenedRouteSegmentStatelessWorker>(0);
         var shortenedRouteSegment = await shortenerRouteSegmentWorker.Create(data.Url);
@@ -125,7 +138,9 @@ app.MapGet("/go/{shortenedRouteSegment:required}",
     .WithDescription("Endpoint per il recupero dell'url abbreviato")
     .WithOpenApi();
 
-app.MapGet("/statistics",
+var statisticsGroup = app.MapGroup("/statistics");
+
+statisticsGroup.MapGet("/",
     async (IClusterClient client) =>
     {
         // Recupero della reference al grano identificato dall'ID univoco
@@ -142,6 +157,26 @@ app.MapGet("/statistics",
     })
     .WithName("Statistics")
     .WithDescription("Endpoint per il recupero delle statistiche")
-    .WithOpenApi(); ;
+    .WithOpenApi();
+
+statisticsGroup.MapGet("/{domain}",
+    async (IClusterClient client, [FromRoute] string domain) =>
+    {
+        // Recupero della reference al grano identificato dall'ID univoco
+        var domainGrain = client.GetGrain<IDomainStatisticsGrain>(domain);
+
+        // Recupero della statistiche tramite metodo GetTotal del grano
+        var totalActivations = await domainGrain.GetTotal();
+        var totalActiveShortenedRouteSegment = await domainGrain.GetNumberOfActiveShortenedRouteSegment();
+
+        return Results.Ok(new GetStatisticsModel.Response
+        {
+            TotalActivations = totalActivations,
+            TotalActiveShortenedRouteSegment = totalActiveShortenedRouteSegment
+        });
+    })
+    .WithName("Domain statistics")
+    .WithDescription("Endpoint per il recupero delle statistiche per dominio")
+    .WithOpenApi();
 
 app.Run();

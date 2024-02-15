@@ -3,7 +3,7 @@ using Orleans.UrlShortner.Observers;
 
 namespace Orleans.UrlShortner.Grains;
 
-public interface IUrlShortnerStatisticsGrain : IGrainWithStringKey, IGrainObserver
+public interface IDomainStatisticsGrain : IGrainWithStringKey, IGrainObserver
 {
     Task Initialize();
     [OneWay]
@@ -16,22 +16,13 @@ public interface IUrlShortnerStatisticsGrain : IGrainWithStringKey, IGrainObserv
     Task<int> GetNumberOfActiveShortenedRouteSegment();
 }
 
-public class UrlShortnerStatisticsGrain : Grain, IUrlShortnerStatisticsGrain
+public class DomainStatisticsGrain : Grain, IDomainStatisticsGrain
 {
-    private readonly ILogger<UrlShortnerStatisticsGrain> logger;
+    private readonly ILogger<IDomainStatisticsGrain> logger;
 
-    public UrlShortnerStatisticsGrain(ILogger<UrlShortnerStatisticsGrain> logger)
+    public DomainStatisticsGrain(ILogger<IDomainStatisticsGrain> logger)
     {
         this.logger = logger;
-    }
-
-    public override async Task OnDeactivateAsync(DeactivationReason reason, CancellationToken token)
-    {
-        await base.OnDeactivateAsync(reason, token);
-
-        var friend = GrainFactory.GetGrain<IRegistrationObserversManager>(0);
-        var obj = this.AsReference<UrlShortnerStatisticsGrain>();
-        await friend.Unsubscribe(obj);
     }
 
     public int TotalActivations { get; set; }
@@ -40,7 +31,7 @@ public class UrlShortnerStatisticsGrain : Grain, IUrlShortnerStatisticsGrain
     public Task Initialize()
     {
         var friend = GrainFactory.GetGrain<IRegistrationObserversManager>(0);
-        var obj = this.AsReference<IUrlShortnerStatisticsGrain>();
+        var obj = this.AsReference<IDomainStatisticsGrain>();
         return friend.Subscribe(obj);
     }
 
