@@ -22,5 +22,10 @@ public class TestSiloConfigurations : ISiloConfigurator
     public void Configure(ISiloBuilder siloBuilder)
     {
         siloBuilder.UseInMemoryReminderService();
+
+        // REGISTRAZIONE STORAGE IN MEMORIA
+        siloBuilder.AddMemoryGrainStorage("domainstatisticsstorage");
+        siloBuilder.AddMemoryGrainStorage("applicationstatisticsstorage");
+        siloBuilder.AddMemoryGrainStorage("urlshortnerstorage");
     }
 }
